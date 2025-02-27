@@ -46,6 +46,44 @@ resource "aws_s3_bucket_public_access_block" "s3_bucket_public_access_block" {
   restrict_public_buckets = true
 }
 
+#Api gateway
+resource "aws_api_gateway_rest_api" "api_gateway" {
+  name        = "airbox-api"
+  description = "This is the airbox API"
+}
+
+resource "aws_api_gateway_resource" "api_gateway_resource" {
+  rest_api_id = aws_api_gateway_rest_api.api_gateway.id
+  parent_id   = aws_api_gateway_rest_api.api_gateway.root_resource_id
+  path_part   = "airbox"
+}
+
+resource "aws_api_gateway_method" "api_gateway_method" {
+  rest_api_id   = aws_api_gateway_rest_api.api_gateway.id
+  resource_id   = aws_api_gateway_resource.api_gateway_resource.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "api_gateway_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.api_gateway.id
+  resource_id             = aws_api_gateway_resource.api_gateway_resource.id
+  http_method             = aws_api_gateway_method.api_gateway_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = "aws_lambda_function.lambda_function.invoke_arn"
+}
+
+resource "aws_api_gateway_method_response" "api_gateway_method_response" {
+  rest_api_id = aws_api_gateway_rest_api.api_gateway.id
+  resource_id = aws_api_gateway_resource.api_gateway_resource.id
+  http_method = aws_api_gateway_method.api_gateway_method.http_method
+  status_code = "200"
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
 #lambda function
 data "aws_iam_policy_document" "lambda_policy" {
   statement {
