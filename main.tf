@@ -136,3 +136,27 @@ resource "aws_lambda_function" "lambda_function" {
     }
   }
 }
+
+#Dynamodb
+resource "aws_dynamodb_table" "dynamodb_table" {
+  name         = var.dynamodb_table
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+  attribute {
+    name = "FileKey"
+    type = "S"
+  }
+
+  attribute {
+    name = "BukcetName"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "BucketNameIndex"
+    hash_key        = "BucketName"
+    projection_type = "ALL"
+    read_capacity   = 1
+    write_capacity  = 1
+  }
+}

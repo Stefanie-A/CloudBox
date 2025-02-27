@@ -20,3 +20,9 @@ variable "lambda_function_name" {
   type        = string
   default     = "airbox-func"
 }
+
+variable "dynamodb_table" {
+  description = "The name of the DynamoDB table"
+  type        = string
+  default     = "S3FileMetadata"
+}
