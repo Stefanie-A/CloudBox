@@ -235,3 +235,26 @@ resource "aws_cloudfront_distribution" "cloudfront_distribution" {
 resource "aws_cloudfront_origin_access_identity" "oai" {
   comment = "Allow CloudFront to reach the bucket"
 }
+
+#cognito
+resource "aws_cognito_user_pool" "user_pool" {
+  name = "airbox--pool"
+}
+
+resource "aws_cognito_user_pool_client" "user_pool_client" {
+  name         = "airbox-pool-client"
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+}
+
+resource "aws_cognito_user_pool_domain" "user_pool_domain" {
+  domain       = "airbox"
+  user_pool_id = aws_cognito_user_pool.user_pool.id
+}
+
+
+resource "aws_cognito_user_pool_ui_customization" "user_pool_ui_customization" {
+  css          = ".label-customizable {font-weight: 400;}"
+  image_file   = filebase64("./logo.png")
+  user_pool_id = aws_cognito_user_pool_domain.user_pool_domain.user_pool_id
+}
+
