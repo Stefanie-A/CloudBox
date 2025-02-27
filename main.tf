@@ -12,7 +12,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-
+#s3 bucket
 resource "aws_s3_bucket" "s3_bucket" {
   bucket = var.s3_bucket_name
   lifecycle {
@@ -44,4 +44,57 @@ resource "aws_s3_bucket_public_access_block" "s3_bucket_public_access_block" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+#lambda function
+data "aws_iam_policy_document" "lambda_policy" {
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "lambda_role" {
+  name               = var.lambda_role_name
+  assume_role_policy = data.aws_iam_policy_document.lambda_policy.json
+}
+
+data "archive_file" "lambda_zip" {
+  excludes = [
+    ".terraform/*",
+    ".git/*",
+    ".gitignore",
+    "terraform.tfstate",
+    "terraform.tfstate.backup",
+    "app/.terraform/*",
+    "app/.git/*",
+    "app/.gitignore",
+    "*.tf",
+    "*.tfvars",
+    "*.tfstate",
+    "*.tfstate.backup",
+    "app/terraform.tfstate",
+    "app/terraform.tfstate.backup",
+  ]
+  type        = "zip"
+  source_dir  = "${path.module}/./app"
+  output_path = "${path.module}/deployment-package.zip"
+}
+resource "aws_lambda_function" "lambda_function" {
+  function_name    = var.lambda_function_name
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "app.handler"
+  runtime          = "python3.12"
+  filename         = data.archive_file.lambda_zip.output_path
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+
+  environment {
+    variables = {
+      foo = "bar"
+    }
+  }
 }
