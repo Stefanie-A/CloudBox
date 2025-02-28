@@ -47,7 +47,7 @@ resource "aws_s3_bucket_public_access_block" "s3_bucket_public_access_block" {
 }
 
 resource "aws_s3_bucket_policy" "bucket_policy" {
-  bucket = ""
+  bucket = aws_s3_bucket.s3_bucket.id
   policy = data.aws_iam_policy_document.iam-policy.json
 }
 
@@ -81,14 +81,14 @@ resource "aws_s3_bucket_website_configuration" "bucket" {
 
 #Api gateway
 resource "aws_api_gateway_rest_api" "api_gateway" {
-  name        = "airbox-api"
+  name        = "cloudbox-api"
   description = "This is the airbox API"
 }
 
 resource "aws_api_gateway_resource" "api_gateway_resource" {
   rest_api_id = aws_api_gateway_rest_api.api_gateway.id
   parent_id   = aws_api_gateway_rest_api.api_gateway.root_resource_id
-  path_part   = "airbox"
+  path_part   = "cloudbox"
 }
 
 resource "aws_api_gateway_method" "api_gateway_method" {
@@ -238,16 +238,27 @@ resource "aws_cloudfront_origin_access_identity" "oai" {
 
 #cognito
 resource "aws_cognito_user_pool" "user_pool" {
-  name = "airbox--pool"
+  name                     = var.cognito_name
+  alias_attributes         = ["email"]
+  auto_verified_attributes = ["email"]
+  password_policy {
+    minimum_length    = 8
+    require_lowercase = true
+    require_numbers   = true
+    require_symbols   = true
+    require_uppercase = true
+  }
 }
 
 resource "aws_cognito_user_pool_client" "user_pool_client" {
-  name         = "airbox-pool-client"
-  user_pool_id = aws_cognito_user_pool.user_pool.id
+  name                          = var.cognito_client_name
+  user_pool_id                  = aws_cognito_user_pool.user_pool.id
+  explicit_auth_flows           = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+  prevent_user_existence_errors = "ENABLED"
 }
 
 resource "aws_cognito_user_pool_domain" "user_pool_domain" {
-  domain       = "airbox"
+  domain       = var.cognito_domain
   user_pool_id = aws_cognito_user_pool.user_pool.id
 }
 
@@ -258,3 +269,32 @@ resource "aws_cognito_user_pool_ui_customization" "user_pool_ui_customization" {
   user_pool_id = aws_cognito_user_pool_domain.user_pool_domain.user_pool_id
 }
 
+resource "aws_cognito_identity_pool" "identity_pool" {
+  identity_pool_name               = var.identity_pool_name
+  allow_unauthenticated_identities = false
+
+  cognito_identity_providers {
+    client_id     = aws_cognito_user_pool_client.user_pool_client.id
+    provider_name = aws_cognito_user_pool.user_pool.endpoint
+  }
+}
+
+#kinesis
+resource "aws_kinesis_stream" "kinesis_stream" {
+  name             = var.kinesis_stream_name
+  shard_count      = 1
+  retention_period = 48
+
+  shard_level_metrics = [
+    "IncomingBytes",
+    "IncomingRecords",
+    "OutgoingBytes",
+    "OutgoingRecords",
+    "ReadProvisionedThroughputExceeded",
+    "WriteProvisionedThroughputExceeded"
+  ]
+
+  stream_mode_details {
+    stream_mode = "ON_DEMAND"
+  }
+}
