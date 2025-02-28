@@ -58,3 +58,10 @@ variable "identity_pool_name" {
   type        = string
   default     = "cloudbox-identity-pool"
 }
+
+variable "ecr_repository_name" {
+  description = "The name of the ECR repository"
+  type        = string
+  default     = "cloudbox-repo"
+  
+}
