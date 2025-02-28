@@ -158,16 +158,20 @@ data "archive_file" "lambda_zip" {
 resource "aws_lambda_function" "lambda_function" {
   function_name    = var.lambda_function_name
   role             = aws_iam_role.lambda_role.arn
-  handler          = "app.handler"
+  handler          = "lambda_function.lambda_handler"
   runtime          = "python3.12"
   filename         = data.archive_file.lambda_zip.output_path
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   environment {
     variables = {
-      foo = "bar"
+      foo            = "bar"
+      S3_BUCKET      = aws_s3_bucket.s3_bucket.bucket
+      DYNAMODB_TABLE = aws_dynamodb_table.dynamodb_table.name
+      KINESIS_STREAM = aws_kinesis_stream.kinesis_stream.name
     }
   }
+  depends_on = [aws_iam_role.lambda_role]
 }
 
 #Dynamodb
@@ -297,4 +301,11 @@ resource "aws_kinesis_stream" "kinesis_stream" {
   stream_mode_details {
     stream_mode = "ON_DEMAND"
   }
+}
+
+resource "aws_lambda_event_source_mapping" "kinesis_trigger" {
+  event_source_arn  = aws_kinesis_stream.kinesis_stream.arn
+  function_name     = aws_lambda_function.lambda_function.arn
+  batch_size        = 100
+  starting_position = "LATEST"
 }
