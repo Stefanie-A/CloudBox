@@ -1,13 +1,15 @@
-TF_DIR=terraform  # Change this if your Terraform files are in a different directory
+TF_DIR=.
 
+init:
+	cd $(TF_DIR) && terraform init
 up:
-	cd $(TF_DIR) && terraform init && terraform apply -auto-approve
+	cd $(TF_DIR) && terraform apply -auto-approve
 
 down:
 	cd $(TF_DIR) && terraform destroy -auto-approve
 
 plan:
-	terraform plan
+	cd $(TF_DIR) && terraform plan
 
 fmt:
 	cd $(TF_DIR) && terraform fmt -recursive

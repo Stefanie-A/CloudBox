@@ -7,7 +7,7 @@ variable "region" {
 variable "s3_bucket_name" {
   description = "The name of the S3 bucket"
   type        = string
-  default = "cloudbox-bucket2825"
+  default     = "cloudbox-bucket2825"
 }
 
 variable "lambda_role_name" {
@@ -64,19 +64,19 @@ variable "ecr_repository_name" {
   description = "The name of the ECR repository"
   type        = string
   default     = "cloudbox-repo"
-  
+
 }
 
 variable "dynamodb_state_table" {
   description = "The name of the DynamoDB state table"
   type        = string
   default     = "terraform-state-lock"
-  
+
 }
 
 variable "s3_state_bucket" {
   description = "The name of the S3 state bucket"
   type        = string
   default     = "tf-state2825"
-  
+
 }
