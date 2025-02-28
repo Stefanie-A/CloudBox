@@ -1,6 +1,6 @@
 name: Build
 on:
-  pull_request:
+  push:
     branches:
       - main
 
@@ -28,7 +28,7 @@ jobs:
         sudo apt-get install make
         make --version
 
-    - name: Terraform init
+    - name: Terraform
       run: |
           make init
           make fmt
