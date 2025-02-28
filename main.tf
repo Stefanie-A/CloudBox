@@ -178,14 +178,14 @@ resource "aws_lambda_function" "lambda_function" {
 resource "aws_dynamodb_table" "dynamodb_table" {
   name         = var.dynamodb_table
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "id"
+  hash_key     = "FileKey"
   attribute {
     name = "FileKey"
     type = "S"
   }
 
   attribute {
-    name = "BukcetName"
+    name = "BucketName"
     type = "S"
   }
 
@@ -299,7 +299,7 @@ resource "aws_kinesis_stream" "kinesis_stream" {
   ]
 
   stream_mode_details {
-    stream_mode = "ON_DEMAND"
+    stream_mode = "PROVISIONED"
   }
 }
 

@@ -7,6 +7,7 @@ variable "region" {
 variable "s3_bucket_name" {
   description = "The name of the S3 bucket"
   type        = string
+  default = "cloudbox-bucket2825"
 }
 
 variable "lambda_role_name" {
