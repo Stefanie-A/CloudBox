@@ -6,29 +6,29 @@ import uuid
 from datetime import datetime
 
 # Initialize AWS clients
-s3_client = boto3.client("s3")
-dynamodb = boto3.resource("dynamodb")
+region_name = 'us-east-1'
+dynamodb = boto3.resource('dynamodb', region_name=region_name)
+s3_client = boto3.resource('s3', region_name=region_name)
 kinesis_client = boto3.client("kinesis")
 
-# Load environment variables
-DYNAMODB_TABLE = os.getenv("DYNAMODB_TABLE")
-S3_BUCKET = os.getenv("S3_BUCKET")
-KINESIS_STREAM = os.getenv("KINESIS_STREAM")
 
-table = dynamodb.Table(DYNAMODB_TABLE)
+table = dynamodb.Table('S3FileMetadata')
+s3_bucket = s3.Bucket('')
+kinesis = kinesis_client('kinesis')
+table = dynamodb.Table('S3FileMetadata')
+
 
 def lambda_handler(event, context):
     """
     Handles API requests to upload or fetch files.
     """
     try:
-        body = json.loads(event['body'])
-        action = body.get("action")
+        http_method = event["httpMethod"]
 
-        if action == "upload":
-            return upload_file(body)
-        elif action == "fetch":
-            return fetch_file(body)
+        if http_method == "POST":
+            return upload_file(json.loads(event['body']))
+        elif http_method == "GET":
+            return fetch_file(event["queryStringParameters"])
         else:
             return generate_response(400, "Invalid action")
     except Exception as e:
@@ -64,6 +64,9 @@ def upload_file(body):
         Data=json.dumps(metadata),
         PartitionKey=user_id
     )
+
+    # Store metadata in DynamoDB
+    table.put_item(Item=metadata)
 
     # Upload file to S3
     decoded_file = base64.b64decode(file_content)
