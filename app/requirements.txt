@@ -1,2 +1,5 @@
-boto3
-Fastapi[all]
+Flask[all]
+requests
+python-dotenv==1.0.0
+authlib==1.2.1
+boto3==1.26.130

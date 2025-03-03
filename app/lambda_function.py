@@ -1,43 +1,36 @@
 import json
 import boto3
 import base64
-import os
 import uuid
+import os
 from datetime import datetime
 
-# Initialize AWS clients
-region_name = 'us-east-1'
-dynamodb = boto3.resource('dynamodb', region_name=region_name)
-s3_client = boto3.resource('s3', region_name=region_name)
-kinesis_client = boto3.client("kinesis")
+# AWS Clients
+dynamodb = boto3.resource('dynamodb')
+s3_client = boto3.client('s3')
+kinesis_client = boto3.client('kinesis')
 
-
-table = dynamodb.Table('S3FileMetadata')
-s3_bucket = s3.Bucket('')
-kinesis = kinesis_client('kinesis')
-table = dynamodb.Table('S3FileMetadata')
-
+TABLE_NAME = os.getenv('DYNAMODB_TABLE', 'S3FileMetadata')
+KINESIS_STREAM = os.getenv('KINESIS_STREAM', 'your-kinesis-stream-name')
+S3_BUCKET = os.getenv('S3_BUCKET', 'your-s3-bucket-name')
+table = dynamodb.Table(TABLE_NAME)
 
 def lambda_handler(event, context):
-    """
-    Handles API requests to upload or fetch files.
-    """
     try:
         http_method = event["httpMethod"]
 
         if http_method == "POST":
-            return upload_file(json.loads(event['body']))
+            return upload_file(json.loads(event["body"]))
         elif http_method == "GET":
             return fetch_file(event["queryStringParameters"])
         else:
             return generate_response(400, "Invalid action")
     except Exception as e:
-        print(f"Error: {str(e)}")
         return generate_response(500, f"Internal Server Error: {str(e)}")
 
 def upload_file(body):
     """
-    Upload file metadata to Kinesis before storing the file in S3.
+    Uploads file to S3 and stores metadata in DynamoDB & Kinesis.
     """
     file_name = body.get("file_name")
     user_id = body.get("user_id")
@@ -46,63 +39,61 @@ def upload_file(body):
     if not file_name or not user_id or not file_content:
         return generate_response(400, "Missing required parameters")
 
-    # Generate unique file key
     file_id = str(uuid.uuid4())
     file_key = f"{user_id}/{file_id}/{file_name}"
 
-    # Prepare metadata for Kinesis
     metadata = {
         "file_id": file_id,
         "file_name": file_name,
         "user_id": user_id,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
+        "file_key": file_key
     }
+    try: 
+        kinesis_client.put_record(
+            StreamName=KINESIS_STREAM,
+            Data=json.dumps(metadata),
+            PartitionKey=user_id
+        )
+    except Exception as e:
+        except Exception as e:
+    return generate_response(500, f"Kinesis Stream Failed: {str(e)}")
 
-    # Send metadata to Kinesis
-    kinesis_client.put_record(
-        StreamName=KINESIS_STREAM,
-        Data=json.dumps(metadata),
-        PartitionKey=user_id
-    )
-
-    # Store metadata in DynamoDB
     table.put_item(Item=metadata)
 
-    # Upload file to S3
     decoded_file = base64.b64decode(file_content)
-    s3_client.put_object(
-        Bucket=S3_BUCKET,
-        Key=file_key,
-        Body=decoded_file,
-        ContentType="application/octet-stream"
-    )
+    try:
+        s3_client.put_object(
+            Bucket=S3_BUCKET,
+            Key=file_key,
+            Body=decoded_file,
+            ContentType="application/octet-stream"
+        )
+    except Exception as e:
+        return generate_response(200, f"File {file_name} uploaded successfully")
 
-    return generate_response(200, f"File {file_name} uploaded successfully")
-
-def fetch_file(body):
+def fetch_file(params):
     """
-    Fetch file metadata from DynamoDB and generate a pre-signed URL.
+    Fetches file metadata from DynamoDB and generates a pre-signed URL.
     """
-    file_name = body.get("file_name")
-    user_id = body.get("user_id")
+    file_id = params.get("FileId")
+    user_id = params.get("UserId")
 
-    if not file_name or not user_id:
+    if not file_id or not user_id:
         return generate_response(400, "Missing required parameters")
 
-    # Query DynamoDB
-    response = table.get_item(Key={"file_name": file_name, "user_id": user_id})
+    response = table.get_item(Key={"file_id": file_id, "user_id": user_id})
 
     if "Item" not in response:
         return generate_response(404, "File not found")
 
     file_metadata = response["Item"]
-    file_key = f"{user_id}/{file_metadata['file_id']}/{file_name}"
+    file_key = file_metadata["file_key"]
 
-    # Generate a pre-signed URL for file download
     presigned_url = s3_client.generate_presigned_url(
         "get_object",
         Params={"Bucket": S3_BUCKET, "Key": file_key},
-        ExpiresIn=3600  # 1-hour expiry
+        ExpiresIn=3600
     )
 
     return generate_response(200, {"presigned_url": presigned_url})

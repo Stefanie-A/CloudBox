@@ -155,9 +155,9 @@ resource "aws_iam_role" "lambda_role" {
 }
 
 resource "aws_lambda_permission" "apigw_lambda" {
-  statement_id  = "AllowExecutionFromAPIGateway"
+  statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda_function.id
+  function_name = aws_lambda_function.lambda_function.arn
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.api_gateway.execution_arn}/*/*"
 }
@@ -202,29 +202,64 @@ resource "aws_lambda_function" "lambda_function" {
   depends_on = [aws_iam_role.lambda_role]
 }
 
+data "aws_lambda_function_url" "existing" {
+  function_name = var.lambda_function_name
+}
+
 #Dynamodb
 resource "aws_dynamodb_table" "dynamodb_table" {
-  name         = var.dynamodb_table
+  name         = "S3FileMetadata"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "FileKey"
+  hash_key     = "file_id"
+  range_key    = "user_id"
+
   attribute {
-    name = "FileKey"
+    name = "file_id"
     type = "S"
   }
 
   attribute {
-    name = "BucketName"
+    name = "user_id"
     type = "S"
+  }
+
+  # Define GSI attributes
+  attribute {
+    name = "Timestamp"
+    type = "S"
+  }
+
+  attribute {
+    name = "file_name"
+    type = "S"
+  }
+
+  attribute {
+    name = "file_key"
+    type = "S"
+  }
+
+  # Define GSI for querying files by timestamp
+  global_secondary_index {
+    name            = "TimestampIndex"
+    hash_key        = "Timestamp"
+    projection_type = "ALL"
   }
 
   global_secondary_index {
-    name            = "BucketNameIndex"
-    hash_key        = "BucketName"
+    name            = "FileNameIndex"
+    hash_key        = "file_name"
     projection_type = "ALL"
-    read_capacity   = 1
-    write_capacity  = 1
+  }
+
+  global_secondary_index {
+    name            = "FileKeyIndex"
+    hash_key        = "file_key"
+    projection_type = "ALL"
   }
 }
+
+
 
 #cloudfront
 resource "aws_cloudfront_distribution" "cloudfront_distribution" {
@@ -313,7 +348,7 @@ resource "aws_cognito_identity_pool" "identity_pool" {
 
 #kinesis
 resource "aws_kinesis_firehose_delivery_stream" "extended_s3_stream" {
-  name        = "kinesis-firehose-extended-s3-test-stream"
+  name        = var.kinesis_stream_name
   destination = "extended_s3"
 
   extended_s3_configuration {
