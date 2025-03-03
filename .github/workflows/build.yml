@@ -40,3 +40,6 @@ jobs:
 
     - name: Terraform apply
       run: make up
+
+    - name: Terraform destroy
+      run: make down

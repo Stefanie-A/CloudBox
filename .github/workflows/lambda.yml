@@ -18,6 +18,16 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ secrets.AWS_REGION }}
 
+    - name: Install dependencies
+      run: |
+        cd infrastructure/app
+        pip install -r requirements.txt -t .
+
+    - name: Zip deployment package
+      run: |
+        cd infrastructure/app 
+        zip -r ./app/deployment-package.zip .
+
     - name: Deploy Lambda function
       run: |
         aws lambda update-function-code --function-name cloudbox-lambda --zip-file fileb://deployment-package.zip

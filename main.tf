@@ -202,10 +202,6 @@ resource "aws_lambda_function" "lambda_function" {
   depends_on = [aws_iam_role.lambda_role]
 }
 
-data "aws_lambda_function_url" "existing" {
-  function_name = var.lambda_function_name
-}
-
 #Dynamodb
 resource "aws_dynamodb_table" "dynamodb_table" {
   name         = "S3FileMetadata"
