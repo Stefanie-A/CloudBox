@@ -80,3 +80,10 @@ variable "s3_state_bucket" {
   default     = "tf-state2825"
 
 }
+
+variable "accountId" {
+  description = "The AWS account ID"
+  type        = string
+  default     = "902839103466"
+
+}

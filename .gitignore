@@ -1,3 +1,5 @@
 .terraform
 .terraform.lock.hcl
 deployment-package.zip
+terraform.tfstate
+terraform.tfstate.backup

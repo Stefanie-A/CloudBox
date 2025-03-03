@@ -37,3 +37,6 @@ jobs:
 
     - name: Terraform plan
       run: make plan
+
+    - name: Terraform apply
+      run: make up

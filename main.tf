@@ -67,6 +67,25 @@ data "aws_iam_policy_document" "iam-policy" {
   }
 }
 
+data "aws_iam_policy_document" "firehose_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["firehose.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "firehose_role" {
+  name               = "firehose_test_role"
+  assume_role_policy = data.aws_iam_policy_document.firehose_assume_role.json
+}
+
+
 resource "aws_s3_bucket_website_configuration" "bucket" {
   bucket = aws_s3_bucket.s3_bucket.id
 
@@ -104,7 +123,7 @@ resource "aws_api_gateway_integration" "api_gateway_integration" {
   http_method             = aws_api_gateway_method.api_gateway_method.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = "aws_lambda_function.lambda_function.invoke_arn"
+  uri                     = aws_lambda_function.lambda_function.invoke_arn
 }
 
 resource "aws_api_gateway_method_response" "api_gateway_method_response" {
@@ -116,6 +135,7 @@ resource "aws_api_gateway_method_response" "api_gateway_method_response" {
     "method.response.header.Access-Control-Allow-Origin" = true
   }
 }
+
 
 #lambda function
 data "aws_iam_policy_document" "lambda_policy" {
@@ -133,6 +153,15 @@ resource "aws_iam_role" "lambda_role" {
   name               = var.lambda_role_name
   assume_role_policy = data.aws_iam_policy_document.lambda_policy.json
 }
+
+resource "aws_lambda_permission" "apigw_lambda" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda_function.id
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.api_gateway.execution_arn}/*/*"
+}
+
 
 data "archive_file" "lambda_zip" {
   excludes = [
@@ -168,7 +197,6 @@ resource "aws_lambda_function" "lambda_function" {
       foo            = "bar"
       S3_BUCKET      = aws_s3_bucket.s3_bucket.bucket
       DYNAMODB_TABLE = aws_dynamodb_table.dynamodb_table.name
-      KINESIS_STREAM = aws_kinesis_stream.kinesis_stream.name
     }
   }
   depends_on = [aws_iam_role.lambda_role]
@@ -267,11 +295,11 @@ resource "aws_cognito_user_pool_domain" "user_pool_domain" {
 }
 
 
-resource "aws_cognito_user_pool_ui_customization" "user_pool_ui_customization" {
-  css          = ".label-customizable {font-weight: 400;}"
-  image_file   = filebase64("./logo.png")
-  user_pool_id = aws_cognito_user_pool_domain.user_pool_domain.user_pool_id
-}
+# resource "aws_cognito_user_pool_ui_customization" "user_pool_ui_customization" {
+#   css          = ".label-customizable {font-weight: 400;}"
+#   image_file   = filebase64("logo.png")
+#   user_pool_id = aws_cognito_user_pool_domain.user_pool_domain.user_pool_id
+# }
 
 resource "aws_cognito_identity_pool" "identity_pool" {
   identity_pool_name               = var.identity_pool_name
@@ -284,30 +312,27 @@ resource "aws_cognito_identity_pool" "identity_pool" {
 }
 
 #kinesis
-resource "aws_kinesis_stream" "kinesis_stream" {
-  name             = var.kinesis_stream_name
-  shard_count      = 1
-  retention_period = 48
+resource "aws_kinesis_firehose_delivery_stream" "extended_s3_stream" {
+  name        = "kinesis-firehose-extended-s3-test-stream"
+  destination = "extended_s3"
 
-  shard_level_metrics = [
-    "IncomingBytes",
-    "IncomingRecords",
-    "OutgoingBytes",
-    "OutgoingRecords",
-    "ReadProvisionedThroughputExceeded",
-    "WriteProvisionedThroughputExceeded"
-  ]
+  extended_s3_configuration {
+    role_arn   = aws_iam_role.firehose_role.arn
+    bucket_arn = aws_s3_bucket.s3_bucket.arn
 
-  stream_mode_details {
-    stream_mode = "PROVISIONED"
+    processing_configuration {
+      enabled = "true"
+
+      processors {
+        type = "Lambda"
+
+        parameters {
+          parameter_name  = "LambdaArn"
+          parameter_value = aws_lambda_function.lambda_function.arn
+        }
+      }
+    }
   }
-}
-
-resource "aws_lambda_event_source_mapping" "kinesis_trigger" {
-  event_source_arn  = aws_kinesis_stream.kinesis_stream.arn
-  function_name     = aws_lambda_function.lambda_function.arn
-  batch_size        = 100
-  starting_position = "LATEST"
 }
 
 #ECR
