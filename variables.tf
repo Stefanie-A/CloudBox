@@ -67,20 +67,6 @@ variable "ecr_repository_name" {
 
 }
 
-variable "dynamodb_state_table" {
-  description = "The name of the DynamoDB state table"
-  type        = string
-  default     = "terraform-state-lock"
-
-}
-
-variable "s3_state_bucket" {
-  description = "The name of the S3 state bucket"
-  type        = string
-  default     = "tf-state2825"
-
-}
-
 variable "accountId" {
   description = "The AWS account ID"
   type        = string
