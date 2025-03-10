@@ -11,7 +11,7 @@ terraform {
     key            = "terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "tf-state-lock"
-    encrypt = true
+    encrypt        = true
   }
 }
 
@@ -85,7 +85,7 @@ data "aws_iam_policy_document" "firehose_assume_role" {
       type        = "Service"
       identifiers = ["firehose.amazonaws.com"]
     }
-    resources = "arn:aws:kinesis:${var.region}:${var.accountId}:stream/${var.kinesis_stream_name}"
+    resources = ["arn:aws:kinesis:${var.region}:${var.accountId}:stream/${var.kinesis_stream_name}"]
   }
 }
 
@@ -383,7 +383,7 @@ resource "aws_ecr_repository" "ecr_repository" {
   image_scanning_configuration {
     scan_on_push = true
   }
-    encryption_configuration {
+  encryption_configuration {
     encryption_type = "AES256"
-    }
+  }
 }
