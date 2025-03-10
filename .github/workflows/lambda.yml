@@ -22,7 +22,7 @@ jobs:
 
     - name: Zip deployment package
       run: |
-        cd infrastructure/app 
+        cd ./app 
         zip -r ./app/deployment-package.zip .
 
     - name: Deploy Lambda function
