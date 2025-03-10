@@ -74,6 +74,7 @@ data "aws_iam_policy_document" "iam-policy" {
   }
 }
 
+# IAM Policy Document for Firehose Assume Role
 data "aws_iam_policy_document" "firehose_assume_role" {
   statement {
     effect  = "Allow"
@@ -84,6 +85,8 @@ data "aws_iam_policy_document" "firehose_assume_role" {
     }
   }
 }
+
+# IAM Policy Document for Lambda to Write to Kinesis
 data "aws_iam_policy_document" "lambda_kinesis_policy" {
   statement {
     effect = "Allow"
@@ -97,16 +100,56 @@ data "aws_iam_policy_document" "lambda_kinesis_policy" {
   }
 }
 
+# IAM Role for Lambda
+resource "aws_iam_role" "lambda_role1" {
+  name               = "lambda_execution_role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_policy.json
+}
+
+# IAM Policy for Lambda to Write to Kinesis
 resource "aws_iam_policy" "lambda_kinesis_policy" {
   name        = "lambda_kinesis_policy"
   description = "Allows lambda to put records in kinesis"
   policy      = data.aws_iam_policy_document.lambda_kinesis_policy.json
 }
 
+# Attach Lambda Policy to Lambda Role
 resource "aws_iam_role_policy_attachment" "lambda_kinesis_attach" {
   policy_arn = aws_iam_policy.lambda_kinesis_policy.arn
-  role       = aws_iam_role.lambda_role.name
+  role       = aws_iam_role.lambda_role1.name
 }
+
+# IAM Role for Firehose
+resource "aws_iam_role" "firehose_role" {
+  name               = "firehose_test_role"
+  assume_role_policy = data.aws_iam_policy_document.firehose_assume_role.json
+}
+
+# IAM Policy for Firehose to Write to S3
+data "aws_iam_policy_document" "firehose_s3_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:PutObject"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.s3_bucket_name}/*"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "firehose_s3_policy" {
+  name        = "firehose_s3_policy"
+  description = "Allows Firehose to put objects in S3"
+  policy      = data.aws_iam_policy_document.firehose_s3_policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "firehose_s3_attach" {
+  policy_arn = aws_iam_policy.firehose_s3_policy.arn
+  role       = aws_iam_role.firehose_role.name
+}
+
+
 
 resource "aws_s3_bucket_website_configuration" "bucket" {
   bucket = aws_s3_bucket.s3_bucket.id
@@ -370,7 +413,7 @@ resource "aws_kinesis_firehose_delivery_stream" "extended_s3_stream" {
   destination = "extended_s3"
 
   extended_s3_configuration {
-    role_arn   = aws_iam_policy.lambda_kinesis_policy.arn
+    role_arn   = aws_iam_role.firehose_role.arn
     bucket_arn = aws_s3_bucket.s3_bucket.arn
 
     processing_configuration {
