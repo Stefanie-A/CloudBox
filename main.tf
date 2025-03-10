@@ -77,13 +77,15 @@ data "aws_iam_policy_document" "iam-policy" {
 data "aws_iam_policy_document" "firehose_assume_role" {
   statement {
     effect = "Allow"
-
+    actions = [
+      "kinesis:PutRecord",
+      "kinesis:PutRecords"
+    ]
     principals {
       type        = "Service"
       identifiers = ["firehose.amazonaws.com"]
     }
-
-    actions = ["sts:AssumeRole"]
+    resources = "arn:aws:kinesis:${var.region}:${var.accountId}:stream/${var.kinesis_stream_name}"
   }
 }
 

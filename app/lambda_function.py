@@ -56,8 +56,7 @@ def upload_file(body):
             PartitionKey=user_id
         )
     except Exception as e:
-        except Exception as e:
-    return generate_response(500, f"Kinesis Stream Failed: {str(e)}")
+        return generate_response(500, f"Kinesis Stream Failed: {str(e)}")
 
     table.put_item(Item=metadata)
 
