@@ -76,24 +76,37 @@ data "aws_iam_policy_document" "iam-policy" {
 
 data "aws_iam_policy_document" "firehose_assume_role" {
   statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["firehose.amazonaws.com"]
+    }
+  }
+}
+data "aws_iam_policy_document" "lambda_kinesis_policy" {
+  statement {
     effect = "Allow"
     actions = [
       "kinesis:PutRecord",
       "kinesis:PutRecords"
     ]
-    principals {
-      type        = "Service"
-      identifiers = ["firehose.amazonaws.com"]
-    }
-    resources = ["arn:aws:kinesis:${var.region}:${var.accountId}:stream/${var.kinesis_stream_name}"]
+    resources = [
+      "arn:aws:kinesis:${var.region}:${var.accountId}:stream/${var.kinesis_stream_name}"
+    ]
   }
 }
 
-resource "aws_iam_role" "firehose_role" {
-  name               = "firehose_test_role"
-  assume_role_policy = data.aws_iam_policy_document.firehose_assume_role.json
+resource "aws_iam_policy" "lambda_kinesis_policy" {
+  name        = "lambda_kinesis_policy"
+  description = "Allows lambda to put records in kinesis"
+  policy      = data.aws_iam_policy_document.lambda_kinesis_policy.json
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_kinesis_attach" {
+  policy_arn = aws_iam_policy.lambda_kinesis_policy.arn
+  role       = aws_iam_role.lambda_role.name
+}
 
 resource "aws_s3_bucket_website_configuration" "bucket" {
   bucket = aws_s3_bucket.s3_bucket.id
@@ -357,7 +370,7 @@ resource "aws_kinesis_firehose_delivery_stream" "extended_s3_stream" {
   destination = "extended_s3"
 
   extended_s3_configuration {
-    role_arn   = aws_iam_role.firehose_role.arn
+    role_arn   = aws_iam_policy.lambda_kinesis_policy.arn
     bucket_arn = aws_s3_bucket.s3_bucket.arn
 
     processing_configuration {
