@@ -11,6 +11,7 @@ terraform {
     key            = "terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "tf-state-lock"
+    encrypt = true
   }
 }
 
@@ -332,11 +333,11 @@ resource "aws_cognito_user_pool_domain" "user_pool_domain" {
 }
 
 
-resource "aws_cognito_user_pool_ui_customization" "user_pool_ui_customization" {
-  css          = ".label-customizable {font-weight: 400;}"
-  image_file   = filebase64("${path.module}/logo.png")
-  user_pool_id = aws_cognito_user_pool_domain.user_pool_domain.user_pool_id
-}
+# resource "aws_cognito_user_pool_ui_customization" "user_pool_ui_customization" {
+#   css          = ".label-customizable {font-weight: 400;}"
+#   image_file   = filebase64("${path.module}/logo.png")
+#   user_pool_id = aws_cognito_user_pool_domain.user_pool_domain.user_pool_id
+# }
 
 resource "aws_cognito_identity_pool" "identity_pool" {
   identity_pool_name               = var.identity_pool_name
