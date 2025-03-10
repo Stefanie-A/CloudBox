@@ -27,4 +27,4 @@ jobs:
 
     - name: Deploy Lambda function
       run: |
-        aws lambda update-function-code --function-name cloudbox-lambda --zip-file fileb://deployment-package.zip
+        aws lambda update-function-code --function-name cloudbox-func --zip-file fileb://deployment-package.zip
