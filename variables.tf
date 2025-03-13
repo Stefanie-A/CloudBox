@@ -67,9 +67,8 @@ variable "ecr_repository_name" {
 
 }
 
-variable "accountId" {
-  description = "The AWS account ID"
+variable "firehose_stream_name" {
+  description = "The name of the Firehose stream"
   type        = string
-  default     = "902839103466"
-
+  default     = "cloudbox-firehose"
 }

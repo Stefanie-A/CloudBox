@@ -86,45 +86,6 @@ data "aws_iam_policy_document" "firehose_assume_role" {
   }
 }
 
-# IAM Policy Document for Lambda to Write to Kinesis
-data "aws_iam_policy_document" "lambda_kinesis_policy" {
-  statement {
-    effect = "Allow"
-    actions = [
-      "kinesis:PutRecord",
-      "kinesis:PutRecords"
-    ]
-    resources = [
-      "arn:aws:kinesis:${var.region}:${var.accountId}:stream/${var.kinesis_stream_name}"
-    ]
-  }
-}
-
-#IAM for Kinesis
-# IAM Policy Document for Kinesis Assume Role
-data "aws_iam_policy_document" "kinesis_assume_role" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["kinesis.amazonaws.com"]
-    }
-  }
-}
-
-# IAM Role for Kinesis Stream
-resource "aws_iam_role" "kinesis_role" {
-  name               = "kinesis_stream_role"
-  assume_role_policy = data.aws_iam_policy_document.kinesis_assume_role.json
-}
-
-# Attach the policy to allow Kinesis to write to S3
-resource "aws_iam_role_policy_attachment" "kinesis_s3_attach" {
-  policy_arn = aws_iam_policy.firehose_s3_policy.arn
-  role       = aws_iam_role.kinesis_role.name
-}
-
 
 # IAM Role for Lambda
 resource "aws_iam_role" "lambda_role" {
@@ -132,58 +93,46 @@ resource "aws_iam_role" "lambda_role" {
   assume_role_policy = data.aws_iam_policy_document.lambda_policy.json
 }
 
-# IAM Policy for Lambda to Write to Kinesis
-resource "aws_iam_policy" "kinesis_write_policy" {
-  name        = "kinesis-putrecord-policy"
-  description = "Policy to allow Lambda to write to Kinesis Stream"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = "kinesis:PutRecord"
-        Resource = "arn:aws:kinesis:us-east-1:902839103466:stream/${var.kinesis_stream_name}"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "attach_kinesis_policy" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = aws_iam_policy.kinesis_write_policy.arn
-}
-
 
 # IAM Role for Firehose
 resource "aws_iam_role" "firehose_role" {
-  name               = "firehose_test_role"
+  name               = "firehose_role"
   assume_role_policy = data.aws_iam_policy_document.firehose_assume_role.json
 }
 
 # IAM Policy for Firehose to Write to S3
-data "aws_iam_policy_document" "firehose_s3_policy" {
+data "aws_iam_policy_document" "firehose_policy_doc" {
   statement {
     effect = "Allow"
     actions = [
+      "firehose:PutRecord",
+      "firehose:PutRecordBatch",
       "s3:PutObject"
     ]
     resources = [
-      "arn:aws:s3:::${var.s3_bucket_name}/*"
+      "arn:aws:s3:::${var.s3_bucket_name}/*",
+      "arn:aws:firehose:${var.region}:${data.aws_caller_identity.current.account_id}:deliverystream/${var.firehose_stream_name}"
     ]
   }
 }
 
-resource "aws_iam_policy" "firehose_s3_policy" {
-  name        = "firehose_s3_policy"
-  description = "Allows Firehose to put objects in S3"
-  policy      = data.aws_iam_policy_document.firehose_s3_policy.json
+resource "aws_iam_policy" "firehose_policy" {
+  name        = "firehose_policy"
+  description = "Allows Firehose to put objects in S3 and lambda"
+  policy      = data.aws_iam_policy_document.firehose_policy_doc.json
 }
 
 resource "aws_iam_role_policy_attachment" "firehose_s3_attach" {
-  policy_arn = aws_iam_policy.firehose_s3_policy.arn
+  policy_arn = aws_iam_policy.firehose_policy.arn
   role       = aws_iam_role.firehose_role.name
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_firehose_attachment" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.firehose_policy.arn
+}
+
+data "aws_caller_identity" "current" {}
 
 
 resource "aws_s3_bucket_website_configuration" "bucket" {
@@ -438,7 +387,7 @@ resource "aws_cognito_identity_pool" "identity_pool" {
 }
 
 #kinesis
-resource "aws_kinesis_firehose_delivery_stream" "extended_s3_stream" {
+resource "aws_kinesis_firehose_delivery_stream" "s3_stream" {
   name        = var.kinesis_stream_name
   destination = "extended_s3"
 
