@@ -100,6 +100,32 @@ data "aws_iam_policy_document" "lambda_kinesis_policy" {
   }
 }
 
+#IAM for Kinesis
+# IAM Policy Document for Kinesis Assume Role
+data "aws_iam_policy_document" "kinesis_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["kinesis.amazonaws.com"]
+    }
+  }
+}
+
+# IAM Role for Kinesis Stream
+resource "aws_iam_role" "kinesis_role" {
+  name               = "kinesis_stream_role"
+  assume_role_policy = data.aws_iam_policy_document.kinesis_assume_role.json
+}
+
+# Attach the policy to allow Kinesis to write to S3
+resource "aws_iam_role_policy_attachment" "kinesis_s3_attach" {
+  policy_arn = aws_iam_policy.firehose_s3_policy.arn
+  role       = aws_iam_role.kinesis_role.name
+}
+
+
 # IAM Role for Lambda
 resource "aws_iam_role" "lambda_role" {
   name               = "lambda_execution_role"
