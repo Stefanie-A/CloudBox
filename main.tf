@@ -101,23 +101,32 @@ data "aws_iam_policy_document" "lambda_kinesis_policy" {
 }
 
 # IAM Role for Lambda
-resource "aws_iam_role" "lambda_role1" {
+resource "aws_iam_role" "lambda_role" {
   name               = "lambda_execution_role"
   assume_role_policy = data.aws_iam_policy_document.lambda_policy.json
 }
 
 # IAM Policy for Lambda to Write to Kinesis
-resource "aws_iam_policy" "lambda_kinesis_policy" {
-  name        = "lambda_kinesis_policy"
-  description = "Allows lambda to put records in kinesis"
-  policy      = data.aws_iam_policy_document.lambda_kinesis_policy.json
+resource "aws_iam_policy" "kinesis_write_policy" {
+  name        = "kinesis-putrecord-policy"
+  description = "Policy to allow Lambda to write to Kinesis Stream"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "kinesis:PutRecord"
+        Resource = "arn:aws:kinesis:us-east-1:902839103466:stream/${var.kinesis_stream_name}"
+      }
+    ]
+  })
 }
 
-# Attach Lambda Policy to Lambda Role
-resource "aws_iam_role_policy_attachment" "lambda_kinesis_attach" {
-  policy_arn = aws_iam_policy.lambda_kinesis_policy.arn
-  role       = aws_iam_role.lambda_role1.name
+resource "aws_iam_role_policy_attachment" "attach_kinesis_policy" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.kinesis_write_policy.arn
 }
+
 
 # IAM Role for Firehose
 resource "aws_iam_role" "firehose_role" {
@@ -212,11 +221,6 @@ data "aws_iam_policy_document" "lambda_policy" {
     }
     actions = ["sts:AssumeRole"]
   }
-}
-
-resource "aws_iam_role" "lambda_role" {
-  name               = var.lambda_role_name
-  assume_role_policy = data.aws_iam_policy_document.lambda_policy.json
 }
 
 resource "aws_lambda_permission" "apigw_lambda" {
