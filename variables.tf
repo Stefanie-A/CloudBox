@@ -70,5 +70,5 @@ variable "ecr_repository_name" {
 variable "firehose_stream_name" {
   description = "The name of the Firehose stream"
   type        = string
-  default     = "cloudbox-firehose"
+  default     = "cloudbox-stream"
 }
