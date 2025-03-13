@@ -8,10 +8,10 @@ from datetime import datetime
 # AWS Clients
 dynamodb = boto3.resource('dynamodb')
 s3_client = boto3.client('s3')
-kinesis_client = boto3.client('kinesis')
+firehose_client = boto3.client('firehose')
 
 TABLE_NAME = os.getenv('DYNAMODB_TABLE', 'S3FileMetadata')
-KINESIS_STREAM = os.getenv('KINESIS_STREAM', 'your-kinesis-stream-name')
+FIREHOSE_STREAM = os.getenv('FIREHOSE_STREAM', 'your-firehose-stream-name')
 S3_BUCKET = os.getenv('S3_BUCKET', 'your-s3-bucket-name')
 table = dynamodb.Table(TABLE_NAME)
 
@@ -50,13 +50,14 @@ def upload_file(body):
         "file_key": file_key
     }
     try: 
-        kinesis_client.put_record(
-            StreamName=KINESIS_STREAM,
-            Data=json.dumps(metadata),
-            PartitionKey=user_id
+        firehose_client.put_record(
+            DeliveryStreamName=FIREHOSE_STREAM,
+            Record={
+                'Data': json.dumps(metadata) + "\n"  # Firehose expects a newline character
+            }
         )
     except Exception as e:
-        return generate_response(500, f"Kinesis Stream Failed: {str(e)}")
+        return generate_response(500, f"Firehose Stream Failed: {str(e)}")
 
     table.put_item(Item=metadata)
 
@@ -69,7 +70,9 @@ def upload_file(body):
             ContentType="application/octet-stream"
         )
     except Exception as e:
-        return generate_response(200, f"File {file_name} uploaded successfully")
+        return generate_response(500, f"S3 Upload Failed: {str(e)}")
+    
+    return generate_response(200, f"File {file_name} uploaded successfully")
 
 def fetch_file(params):
     """
