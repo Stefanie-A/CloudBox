@@ -107,18 +107,21 @@ data "aws_iam_policy_document" "firehose_policy_doc" {
     actions = [
       "firehose:PutRecord",
       "firehose:PutRecordBatch",
-      "s3:PutObject"
+      "firehose:DescribeDeliveryStream",
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+      "logs:PutLogEvents"
     ]
     resources = [
       "arn:aws:s3:::${var.s3_bucket_name}/*",
-      "arn:aws:firehose:${var.region}:${data.aws_caller_identity.current.account_id}:deliverystream/${var.firehose_stream_name}"
+      "arn:aws:firehose:us-east-1:${data.aws_caller_identity.current.account_id}:deliverystream/${var.firehose_stream_name}"
     ]
   }
 }
 
 resource "aws_iam_policy" "firehose_policy" {
   name        = "firehose_policy"
-  description = "Allows Firehose to put objects in S3 and lambda"
+  description = "Allows Firehose to put objects in S3 and Lambda"
   policy      = data.aws_iam_policy_document.firehose_policy_doc.json
 }
 
@@ -133,6 +136,7 @@ resource "aws_iam_role_policy_attachment" "lambda_firehose_attachment" {
 }
 
 data "aws_caller_identity" "current" {}
+
 
 
 resource "aws_s3_bucket_website_configuration" "bucket" {
@@ -421,4 +425,26 @@ resource "aws_ecr_repository" "ecr_repository" {
   encryption_configuration {
     encryption_type = "AES256"
   }
+}
+
+resource "aws_iam_policy" "dynamodb_write_policy" {
+  name        = "dynamodb_write_policy"
+  description = "Allow Lambda to write to DynamoDB"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:PutItem"
+        ],
+        Resource = "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}/S3FileMetadata"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_dynamodb_attach" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.dynamodb_write_policy.arn
 }

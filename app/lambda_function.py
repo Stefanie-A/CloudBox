@@ -8,7 +8,7 @@ from datetime import datetime
 # AWS Clients
 dynamodb = boto3.resource('dynamodb')
 s3_client = boto3.client('s3')
-firehose_client = boto3.client('firehose')
+firehose_client = boto3.client('firehose', region_name='us-east-1')
 
 TABLE_NAME = os.getenv('DYNAMODB_TABLE', 'S3FileMetadata')
 FIREHOSE_STREAM = os.getenv('FIREHOSE_STREAM', 'your-firehose-stream-name')
@@ -51,7 +51,7 @@ def upload_file(body):
     }
     try: 
         firehose_client.put_record(
-            DeliveryStreamName=FIREHOSE_STREAM,
+            DeliveryStreamName= "cloudbox-stream",
             Record={
                 'Data': json.dumps(metadata) + "\n"  # Firehose expects a newline character
             }
