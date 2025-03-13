@@ -438,7 +438,7 @@ resource "aws_iam_policy" "dynamodb_write_policy" {
         Action = [
           "dynamodb:PutItem"
         ],
-        Resource = "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}/S3FileMetadata"
+        Resource = "arn:aws:dynamodb:us-east-1:${data.aws_caller_identity.current.account_id}:table/S3FileMetadata"
       }
     ]
   })
