@@ -494,8 +494,9 @@ resource "aws_iam_role_policy_attachment" "lambda_dynamodb_attach" {
 
 #API Gateway Cognito Authorizer
 resource "aws_api_gateway_authorizer" "cognito_authorizer" {
-  name          = "cognito-authorizer"
-  rest_api_id   = aws_api_gateway_rest_api.api_gateway.id
-  type          = "COGNITO_USER_POOLS"
-  provider_arns = [aws_cognito_identity_pool.identity_pool.arn]
+  name            = "cognito-authorizer"
+  rest_api_id     = aws_api_gateway_rest_api.api_gateway.id
+  type            = "COGNITO_USER_POOLS"
+  identity_source = "method.request.header.Authorization"
+  provider_arns   = [aws_cognito_user_pool.user_pool.arn]
 }
