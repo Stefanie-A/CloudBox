@@ -11,11 +11,12 @@ s3_client = boto3.client('s3')
 firehose_client = boto3.client('firehose', region_name='us-east-1')
 
 TABLE_NAME = os.getenv('DYNAMODB_TABLE', 'S3FileMetadata')
-FIREHOSE_STREAM = os.getenv('FIREHOSE_STREAM', 'your-firehose-stream-name')
-S3_BUCKET = os.getenv('S3_BUCKET', 'your-s3-bucket-name')
+FIREHOSE_STREAM = os.getenv('FIREHOSE_STREAM', 'cloudbox-stream')
+S3_BUCKET = os.getenv('S3_BUCKET', 'cloudbox-bucket')
 table = dynamodb.Table(TABLE_NAME)
 
 def lambda_handler(event, context):
+    user_id = event['requestContext']['authorizer']['claims']['sub']
     try:
         http_method = event["httpMethod"]
 
@@ -42,16 +43,25 @@ def upload_file(body):
     file_id = str(uuid.uuid4())
     file_key = f"{user_id}/{file_id}/{file_name}"
 
+    # Generate Pre-signed URL
+    presigned_url = s3_client.generate_presigned_url(
+        'put_object',
+        Params={'Bucket': S3_BUCKET, 'Key': unique_file_key},
+        ExpiresIn=3600
+    )
+
     metadata = {
+        "user_id": user_id,
         "file_id": file_id,
         "file_name": file_name,
-        "user_id": user_id,
+        "file_key": file_key,
+        'pre_signed_url': presigned_url,
         "timestamp": datetime.utcnow().isoformat(),
-        "file_key": file_key
+        
     }
     try: 
         firehose_client.put_record(
-            DeliveryStreamName= "cloudbox-stream",
+            DeliveryStreamName= FIREHOSE_STREAM,
             Record={
                 'Data': json.dumps(metadata) + "\n"  # Firehose expects a newline character
             }
