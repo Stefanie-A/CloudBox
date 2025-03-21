@@ -1,6 +1,5 @@
 import os
 from app import *
-import base64
 import requests
 import datetime
 from flask import Flask, request, jsonify, session
@@ -18,6 +17,12 @@ def home():
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    # print("Request Headers:", request.headers)
+    # print("Request Content-Type:", request.content_type)
+    # print("Request Form:", request.form)
+    # print("Request Files:", request.files)
+    
+    
     token = request.headers.get('Authorization')
 
     if not token:
@@ -27,16 +32,14 @@ def upload():
     if not file:
         return jsonify({"error": "No file provided"}), 400
 
-     file_content = base64.b64encode(file.read()).decode('utf-8')
+    user_id = request.form.get("user_id")  
+    file = request.files.get("file")  
 
-    body = {
-        "file_name": file.filename,
-        "user_id": file.user_id,  
-        "file_content": file_content
-    }
-    response = upload_file(body)
-
-    return jsonify(response), response["statusCode"]
+    if not user_id or not file:
+        return jsonify({"message": "Missing required parameters"}), 400
+    
+    response = upload_file(file, user_id)
+    return jsonify({"message": "File uploaded successfully"}), 200
 
 @app.route('/fetch', methods=['GET'])
 def fetch():

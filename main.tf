@@ -279,8 +279,8 @@ resource "aws_lambda_function" "lambda_function" {
 resource "aws_dynamodb_table" "dynamodb_table" {
   name         = "S3FileMetadata"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "file_id"
-  range_key    = "user_id"
+  hash_key     = "user_id"
+  range_key    = "file_id"
 
   attribute {
     name = "file_id"
