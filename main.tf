@@ -405,6 +405,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   prevent_user_existence_errors        = "ENABLED"
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code", "implicit"]
+  callback_urls                        = ["http://localhost:80"]
   allowed_oauth_scopes                 = ["email", "openid", "profile"]
   supported_identity_providers         = ["COGNITO"]
 }
