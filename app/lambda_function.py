@@ -16,7 +16,20 @@ S3_BUCKET = os.getenv('S3_BUCKET', 'cloudbox-bucket')
 table = dynamodb.Table(TABLE_NAME)
 
 def lambda_handler(event, context):
-    user_id = event['requestContext']['authorizer']['claims']['sub']
+    auth_header = event['headers'].get('Authorization')
+    if not auth_header:
+        return generate_response(401, "Unauthorized: No token provided")
+    
+    token = auth_header.split(" ")[1]  # Bearer <token>
+
+    # Step 2: Verify JWT token
+    try:
+        decoded_jwt = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+        user_id = decoded_jwt['email']
+    except jwt.ExpiredSignatureError:
+        return generate_response(401, "Token expired")
+    except jwt.InvalidTokenError:
+        return generate_response(401, "Invalid token")
     try:
         http_method = event["httpMethod"]
 
