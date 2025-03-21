@@ -18,7 +18,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt
+        pip install -r app/requirements.txt
 
     - name: Zip deployment package
       run: |
