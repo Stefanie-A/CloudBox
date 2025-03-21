@@ -385,8 +385,8 @@ resource "aws_cloudfront_origin_access_identity" "oai" {
 
 #cognito
 resource "aws_cognito_user_pool" "user_pool" {
-  name                     = var.cognito_name
-  alias_attributes         = ["email"]
+  name = var.cognito_name
+  # alias_attributes         = ["email"]
   auto_verified_attributes = ["email"]
   password_policy {
     minimum_length    = 8
@@ -400,13 +400,14 @@ resource "aws_cognito_user_pool" "user_pool" {
 resource "aws_cognito_user_pool_client" "user_pool_client" {
   name                                 = var.cognito_client_name
   user_pool_id                         = aws_cognito_user_pool.user_pool.id
-  explicit_auth_flows                  = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
-  prevent_user_existence_errors        = "ENABLED"
   generate_secret                      = false
+  explicit_auth_flows                  = ["ALLOW_USER_PASSWORD_AUTH", "ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"]
+  prevent_user_existence_errors        = "ENABLED"
   allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_flows                  = ["implicit"]
-  allowed_oauth_scopes                 = ["email", "openid"]
+  allowed_oauth_flows                  = ["code", "implicit"]
+  allowed_oauth_scopes                 = ["email", "openid", "profile"]
   callback_urls                        = ["https://localhost:3000"]
+  supported_identity_providers         = ["COGNITO"]
 }
 
 resource "aws_cognito_user_pool_domain" "user_pool_domain" {
