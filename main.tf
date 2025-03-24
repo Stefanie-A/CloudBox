@@ -279,8 +279,8 @@ resource "aws_lambda_function" "lambda_function" {
 resource "aws_dynamodb_table" "dynamodb_table" {
   name         = "S3FileMetadata"
   billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "user_id"
-  range_key    = "file_id"
+  hash_key     = "file_id"
+  range_key    = "user_id"
 
   attribute {
     name = "file_id"
@@ -386,8 +386,9 @@ resource "aws_cloudfront_origin_access_identity" "oai" {
 #cognito
 resource "aws_cognito_user_pool" "user_pool" {
   name = var.cognito_name
-  # alias_attributes         = ["email"]
+  alias_attributes         = ["email"]
   auto_verified_attributes = ["email"]
+  
   password_policy {
     minimum_length    = 8
     require_lowercase = true
@@ -405,7 +406,7 @@ resource "aws_cognito_user_pool_client" "user_pool_client" {
   prevent_user_existence_errors        = "ENABLED"
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["code", "implicit"]
-  callback_urls                        = ["http://localhost:80"]
+  callback_urls                        = ["http://localhost:5000/home"]
   allowed_oauth_scopes                 = ["email", "openid", "profile"]
   supported_identity_providers         = ["COGNITO"]
 }
