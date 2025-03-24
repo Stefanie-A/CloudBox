@@ -76,43 +76,23 @@ def upload_file(file, user_id):
     
     return generate_response(200, f"File {file_name} uploaded successfully")
 
-def fetch_file(params):
-    """
-    Fetches file metadata from DynamoDB and generates a pre-signed URL.
-    """
-    key = {
-        "file_id": {"S": params["FileId"]},
-        "user_id": {"S": params["UserId"]}
-    }
-   
+def fetch_file(file_id, user_id):
+    # Ensure both file_id and user_id are provided
     try:
-        response = table.get_item(Key=key)
-        print("DynamoDB Response:", json.dumps(response, indent=4))
+        response = table.get_item(Key={"file_id": file_id, "user_id": user_id})
+
+        # Log DynamoDB response
+        print("DEBUG: DynamoDB Response:", json.dumps(response, indent=4))
+
         item = response.get("Item")
+        if not item:
+            return {"statusCode": 404, "body": {"message": "File not found"}}
 
-        if "Item" not in response:
-            return {"statusCode": 404, "body": json.dumps({"message": "File not found"})}
-        
-        file_metadata = response["Item"]
-        file_key = file_metadata["file_key"]["S"]
-    
-   
-        presigned_url = s3_client.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": S3_BUCKET, "Key": file_key},
-            ExpiresIn=3600
-        )
+        return {"statusCode": 200, "body": item}
 
-        return {
-            "statusCode": 200,
-            "body": json.dumps({
-                "file_metadata": file_metadata,
-                "presigned_url": presigned_url
-            })
-        }
     except Exception as e:
-       return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
-
+        print("DEBUG: Error fetching from DynamoDB:", str(e))
+        return {"statusCode": 500, "body": {"error": str(e)}}
 
 def generate_response(status_code, message):
     """

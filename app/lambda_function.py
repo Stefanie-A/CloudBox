@@ -17,17 +17,6 @@ def home():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    # print("Request Headers:", request.headers)
-    # print("Request Content-Type:", request.content_type)
-    # print("Request Form:", request.form)
-    # print("Request Files:", request.files)
-    
-    
-    token = request.headers.get('Authorization')
-
-    if not token:
-        return jsonify({"error": "No token provided"}), 401
-    
     file = request.files.get('file')
     if not file:
         return jsonify({"error": "No file provided"}), 400
@@ -43,26 +32,23 @@ def upload():
 
 @app.route('/fetch', methods=['GET'])
 def fetch():
+    """API endpoint to fetch file metadata."""
     token = request.headers.get('Authorization')
-
     if not token:
         return jsonify({"error": "No token provided"}), 401
-    
+
     file_id = request.args.get('file_id')
-    user_id = request.args.get('user_id')
+    user_id = request.args.get('user_id', '').strip()
 
     if not file_id or not user_id:
         return jsonify({"error": "Missing required parameters"}), 400
 
-    params = {
-        "FileId": file_id,
-        "UserId": user_id
-    }
+    print(f"DEBUG: Fetching file with file_id={file_id}, user_id={user_id}")
 
-    # Call fetch_file directly
-    response = fetch_file(params)
+    response = fetch_file(file_id, user_id)
 
-    return jsonify(response), response["statusCode"]
+    return jsonify(response["body"]), response["statusCode"]
+
 
 if __name__ == '__main__':
     app.run(debug=True)
