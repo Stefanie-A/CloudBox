@@ -63,7 +63,7 @@ def upload_file(file, user_id):
         firehose_client.put_record(
             DeliveryStreamName= FIREHOSE_STREAM,
             Record={
-                'Data': json.dumps(metadata) + "\n"  # Firehose expects a newline character
+                'Data': json.dumps(metadata) + "\n" 
             }
         )
     except Exception as e:
