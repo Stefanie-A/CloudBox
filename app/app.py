@@ -80,39 +80,35 @@ def fetch_file(params):
     """
     Fetches file metadata from DynamoDB and generates a pre-signed URL.
     """
-    file_id = params.get("FileId")
-    user_id = params.get("UserId")
-
-    if not file_id or not user_id:
-        return generate_response(400, "Missing required parameters")
-
+    key = {
+        "file_id": {"S": params["FileId"]},
+        "user_id": {"S": params["UserId"]}
+    }
+   
     try:
-        response = table.get_item(Key={"user_id": user_id, "file_id": file_id})
-        print("DynamoDB Response:", response)
+        response = table.get_item(Key=key)
+        print("DynamoDB Response:", json.dumps(response, indent=4))
         item = response.get("Item")
 
-        if not item:
-            print("Item not found in DynamoDB")
-            return generate_response(404, "File not found")
-
+        if "Item" not in response:
+            return {"statusCode": 404, "body": json.dumps({"message": "File not found"})}
+        
         file_metadata = response["Item"]
-        file_key = file_metadata["file_key"]
-
+        file_key = file_metadata["file_key"]["S"]
+    
+   
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": S3_BUCKET, "Key": file_key},
             ExpiresIn=3600
         )
 
-        return generate_response(200, {"presigned_url": presigned_url})
+        return {
+            "statusCode": 200,
+            "body": json.dumps({
+                "file_metadata": file_metadata,
+                "presigned_url": presigned_url
+            })
+        }
     except Exception as e:
-        return generate_response(500, f"Error fetching file: {str(e)}")
-
-def generate_response(status_code, message):
-    """
-    Helper function to generate API response.
-    """
-    return {
-        "statusCode": status_code,
-        "body": json.dumps({"message": message})
-    }
+       return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
