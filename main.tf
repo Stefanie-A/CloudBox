@@ -139,18 +139,6 @@ data "aws_caller_identity" "current" {}
 
 
 
-resource "aws_s3_bucket_website_configuration" "bucket" {
-  bucket = aws_s3_bucket.s3_bucket.id
-
-  index_document {
-    suffix = "index.html"
-  }
-
-  error_document {
-    key = "404.html"
-  }
-}
-
 #Api gateway
 resource "aws_api_gateway_rest_api" "api_gateway" {
   name        = "cloudbox-api"
@@ -340,55 +328,12 @@ resource "aws_dynamodb_table" "dynamodb_table" {
 }
 
 
-
-#cloudfront
-resource "aws_cloudfront_distribution" "cloudfront_distribution" {
-  origin {
-    domain_name = aws_s3_bucket.s3_bucket.bucket_regional_domain_name
-    origin_id   = aws_s3_bucket.s3_bucket.bucket_regional_domain_name
-  }
-
-  enabled             = true
-  is_ipv6_enabled     = true
-  default_root_object = "index.html"
-
-  default_cache_behavior {
-    target_origin_id       = aws_s3_bucket.s3_bucket.bucket_regional_domain_name
-    viewer_protocol_policy = "allow-all"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD", "OPTIONS"]
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
-    min_ttl     = 0
-    default_ttl = 3600
-    max_ttl     = 86400
-  }
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-
-  viewer_certificate {
-    cloudfront_default_certificate = true
-  }
-}
-
-resource "aws_cloudfront_origin_access_identity" "oai" {
-  comment = "Allow CloudFront to reach the bucket"
-}
-
 #cognito
 resource "aws_cognito_user_pool" "user_pool" {
-  name = var.cognito_name
+  name                     = var.cognito_name
   alias_attributes         = ["email"]
   auto_verified_attributes = ["email"]
-  
+
   password_policy {
     minimum_length    = 8
     require_lowercase = true
