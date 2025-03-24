@@ -112,3 +112,13 @@ def fetch_file(params):
         }
     except Exception as e:
        return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
+
+
+def generate_response(status_code, message):
+    """
+    Helper function to generate API response.
+    """
+    return {
+        "statusCode": status_code,
+        "body": json.dumps({"message": message})
+    }
