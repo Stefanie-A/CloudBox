@@ -11,17 +11,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - uses: advanced-security/python-lint-code-scanning-action@v1
         with:
+          linter: flake8
           python-version: ${{ matrix.python-version }}
-
-      - name: Install Flake8
-        run: python -m pip install --upgrade pip flake8
-
-      - name: Run Flake8
-        run: flake8 .
-
+          
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v3
         with:
