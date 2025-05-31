@@ -41,13 +41,8 @@ jobs:
           terraform_version: 1.10.4
       
       - name: Building docker image with buildpack
-        run: |
-          sudo add-apt-repository ppa:cncf-buildpacks/pack-cli
-          sudo apt-get update
-          sudo apt-get install pack-cli
-          cd myapp
-          pack build myapp:latest \
-          --builder paketo-buildpacks/builder:base
+        run: ./docker-build.sh
+          
   
       - name: Install make
         run: sudo apt-get install -y make
