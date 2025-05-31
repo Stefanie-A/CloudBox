@@ -22,7 +22,7 @@ jobs:
       #     python-version: ${{ matrix.python-version }}
           
       - name: Configure AWS credentials with OIDC
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4.1.0
         with:
           audience: sts.amazonaws.com 
           aws-region: ${{ secrets.AWS_REGION }}
