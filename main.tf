@@ -58,6 +58,10 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
   policy = data.aws_iam_policy_document.iam-policy.json
 }
 
+resource "aws_cloudfront_origin_access_identity" "oai" {
+  comment = "OAI for S3 access"
+}
+
 data "aws_iam_policy_document" "iam-policy" {
   statement {
     sid     = "AllowOAIRead"
