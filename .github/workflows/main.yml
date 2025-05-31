@@ -33,7 +33,7 @@ jobs:
         with:
           audience: sts.amazonaws.com 
           aws-region: us-east-1
-          role-to-assume: arn:aws:iam::902839103466:role/OIDC
+          role-to-assume: arn:aws:iam::902839103466:role/openidconnect
 
       - name: Terraform setup
         uses: hashicorp/setup-terraform@v2
