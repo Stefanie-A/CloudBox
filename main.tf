@@ -7,8 +7,8 @@ terraform {
   }
   required_version = ">= 1.8"
   backend "s3" {
-    bucket         = "t5"
-    key            = "cloudbox-statefile27"
+    bucket         = "cloudbox-statefile27"
+    key            = "terrafrorm.tfstate"
     region         = "us-east-1"
     dynamodb_table = "backend-lock"
     encrypt        = true
