@@ -42,10 +42,13 @@ jobs:
       
       - name: Building docker image with buildpack
         run: |
-          chmod +x ./scripts/build.sh
-          ./scripts/build.sh
-          
-  
+          sudo add-apt-repository ppa:cncf-buildpacks/pack-cli
+          sudo apt-get update
+          sudo apt-get install pack-cli
+          cd app
+          pack build myapp:latest --builder paketo-buildpacks/builder:base
+                    
+            
       - name: Install make
         run: sudo apt-get install -y make
 
