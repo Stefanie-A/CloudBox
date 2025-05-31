@@ -5,19 +5,24 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.8, 3.9, 3.10, 3.11, 3.12]
+    # strategy:
+    #   matrix:
+    #     python-version: [3.8, 3.9, 3.10, 3.11, 3.12]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      - uses: advanced-security/python-lint-code-scanning-action@v1
-        with:
-          linter: flake8
-          python-version: ${{ matrix.python-version }}
+        uses: actions/checkout@v3
+      # - name: Set up Python
+      #   uses: actions/setup-python@v4
+      #   with:
+      #     python-version: ${{ matrix.python-version }}
+      #     cache: 'pip'
+      # - uses: advanced-security/python-lint-code-scanning-action@v1
+      #   with:
+      #     linter: flake8
+      #     python-version: ${{ matrix.python-version }}
           
       - name: Configure AWS credentials with OIDC
-        uses: aws-actions/configure-aws-credentials@v3
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           audience: sts.amazonaws.com 
           aws-region: ${{ secrets.AWS_REGION }}
@@ -52,7 +57,7 @@ jobs:
       - name: Terraform plan
         run: make plan
 
-      - name: Terraform apply
-        run: make up
+      # - name: Terraform apply
+      #   run: make up
 
   
