@@ -63,4 +63,14 @@ jobs:
       - name: Terraform apply
         run: make up
 
+    #Kubernetes deployment
+      - name: Deploy to Kubernetes
+        run: |
+           chmod +x ./scripts/k8s.sh
+           ./scripts/k8s.sh          
+      - name: Cleanup
+        run: |
+          docker logout
+          echo "Cleanup completed."
+
   
