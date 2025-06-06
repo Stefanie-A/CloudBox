@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudbox-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloudbox
+  template:
+    metadata:
+      labels:
+        app: cloudbox
+    spec:
+      containers:
+        - name: cloudbox
+          image: stefnie/cloudbox:latest
+          ports:
+            - containerPort: 5000

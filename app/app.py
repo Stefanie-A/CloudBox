@@ -5,8 +5,9 @@ import os
 from datetime import datetime
 
 # AWS Clients
-dynamodb = boto3.resource('dynamodb')
-s3_client = boto3.client('s3')
+os.environ["AWS_DEFAULT_REGION"] = "us-east-1" 
+dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+s3_client = boto3.client('s3', region_name='us-east-1')
 firehose_client = boto3.client('firehose', region_name='us-east-1')
 
 TABLE_NAME = os.getenv('DYNAMODB_TABLE', 'S3FileMetadata')
@@ -68,6 +69,7 @@ def upload_file(file, user_id):
         )
     except Exception as e:
         return generate_response(500, f"Firehose Stream Failed: {str(e)}")
+    # Log metadata to DynamoDB
     try:
         table.put_item(Item=metadata)
     except Exception as e:

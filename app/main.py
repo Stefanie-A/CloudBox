@@ -1,5 +1,5 @@
 import os
-from app import *
+from app import *  # Import all necessary functions
 import requests
 import datetime
 from flask import Flask, request, jsonify, session
@@ -17,17 +17,29 @@ def home():
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    user_id = request.form.get("user_id")
     file = request.files.get('file')
-    if not file:
-        return jsonify({"error": "No file provided"}), 400
+    if not file or not user_id:
+        return jsonify({"error": "Missing file or user id"}), 400
 
-    user_id = request.form.get("user_id")  
-    file = request.files.get("file")  
+    # Validate file type and size
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
+    max_file_size = 5 * 1024 * 1024  # 5 MB
 
-    if not user_id or not file:
-        return jsonify({"message": "Missing required parameters"}), 400
+    file_extension = file.filename.rsplit('.', 1)[-1].lower()
+    if file_extension not in allowed_extensions:
+        return jsonify({"error": "Invalid file type"}), 400
+
+    if len(file.read()) > max_file_size:
+        return jsonify({"error": "File size exceeds the limit"}), 400
+
+    file.seek(0)  # Reset file pointer after reading size
     
-    response = upload_file(file, user_id)
+    return jsonify({
+        "message": "File uploaded successfully",
+        "file_name": file.filename,
+        "user_id": user_id
+    }), 200
     return jsonify({"message": "File uploaded successfully"}), 200
 
 @app.route('/fetch', methods=['GET'])
@@ -51,4 +63,4 @@ def fetch():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
